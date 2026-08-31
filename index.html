@@ -508,11 +508,16 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
 
     /* The Pop-Up Roof stays out of this app as a NATIVE module -- that
        decision holds. It was never a decision to remove access to it when
-       this launcher replaces the hub. Its canonical home is its own domain,
-       from vercel.json's host rewrite, not app/popup.html. */
+       this launcher replaces the hub.
+       ⚠ MEASURED, NOT INFERRED. This pointed at the bare host on the strength
+       of Cardinal's vercel.json rewrite. In production that rewrite DOES NOT
+       FIRE: https://presentation.cardinalroster.com/ returns the CRM titled
+       "Cardinal Client Resources"; /popup.html on the same host returns the
+       book. The explicit path is the only destination we have seen serve
+       The Pop-Up Roof. Repairing the rewrite is a separate decision. */
     { key: 'popup', tag: 'Client-facing', ext: 1, name: 'The Pop-Up Roof',
       note: 'How a roof gets built — a book they can hold.',
-      href: 'https://presentation.cardinalroster.com/' }
+      href: 'https://presentation.cardinalroster.com/popup.html' }
   ];
 
   function drawLauncher() {
