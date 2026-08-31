@@ -474,7 +474,45 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
       href: 'https://app.cardinalroster.com/studio.html' },
     { key: 'visualizer', tag: 'Separate app', ext: 1, name: 'Exterior Visualizer',
       note: 'Approved renders, one tap. Its own application.',
-      href: 'https://app.cardinalroster.com/visualizer/?present=1' }
+      href: 'https://app.cardinalroster.com/visualizer/?present=1' },
+
+    /* ── the three doors the Vision hub had and this launcher did not ──────
+       The hub offers SEVEN destinations; this launcher offered four. Two of
+       the missing three were never mentioned in the extraction spike, the
+       deployment boundary or the retirement matrix, because all three scoped
+       the relocation as "Showcase + OC Colors". Leaving them out of a NEW app
+       cost nothing; leaving them out of a launcher that REPLACES the hub would
+       have removed doors Theo has today.
+
+       ⚠ ALL THREE ARE OUTBOUND ON PURPOSE, AND EVERY URL IS CANONICAL —
+       an absolute address that resolves the same wherever this page is served
+       from. The hub's own links were relative (`/studio.html`, `/popup.html`)
+       and worked only because that hostname happened to serve Cardinal's whole
+       deployment; on this project they 404. A path is not a destination. */
+
+    /* The Appointment is a CONDUCTOR over surfaces that live in Cardinal
+       (Job -> Roof -> Good -> Why -> House), so it is linked, never relocated
+       -- Theo's instruction, and moving it would drag four other modules. */
+    { key: 'appt', tag: 'Cardinal', ext: 1, name: 'The Appointment',
+      note: 'The running order for the in-home visit.',
+      href: 'https://app.cardinalroster.com/?open=appt' },
+
+    /* Why Cardinal has exactly ONE implementation and it is not here: a grep
+       for it across this repo returns zero files. So this tile is a link to
+       the real thing, not a duplicate launcher for a number. It also has a
+       SECOND caller in Cardinal -- the Appointment's own Why step -- so
+       relocating it natively would break the Appointment or fork the module. */
+    { key: 'why', tag: 'Cardinal', ext: 1, name: 'Why Cardinal',
+      note: 'Licence, warranty, and what actually goes on the roof.',
+      href: 'https://app.cardinalroster.com/?open=why' },
+
+    /* The Pop-Up Roof stays out of this app as a NATIVE module -- that
+       decision holds. It was never a decision to remove access to it when
+       this launcher replaces the hub. Its canonical home is its own domain,
+       from vercel.json's host rewrite, not app/popup.html. */
+    { key: 'popup', tag: 'Client-facing', ext: 1, name: 'The Pop-Up Roof',
+      note: 'How a roof gets built — a book they can hold.',
+      href: 'https://presentation.cardinalroster.com/' }
   ];
 
   function drawLauncher() {
