@@ -112,7 +112,11 @@ jobs:
         run: |
           # The publishable anon key is public by design and expected. A
           # service-role key bypasses every RLS policy and must never appear.
-          if grep -rIl --exclude-dir=.git --exclude-dir=node_modules 'service_role\|SUPABASE_SERVICE' . ; then
-            echo "::error::a service-role reference is present - it must never be committed"; exit 1
-          fi
-          echo "no service-role reference"
+          #
+          # The scanner matches the VALUE SHAPE, never the words. Its first
+          # version grepped this file for 'service_role' and so failed on the
+          # file that defined it, on every push, having never once passed.
+          # The selftest runs first: a scanner never seen to fail is not
+          # evidence, and this one was green-hatted red for five commits.
+          node .github/scan_secret.js --selftest
+          node .github/scan_secret.js
