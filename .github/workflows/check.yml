@@ -90,6 +90,24 @@ jobs:
             if(bad)process.exit(1); console.log('no CRM markers in '+files.length+' files');
           "
 
+      # ⚠ THE MOUNT DIVS MUST NOT EXIST IN THIS FILE. Both relocated modules are
+      # self-mounting and take zero DOM anchors from outside. Providing one is
+      # not neutral: OC Colors' ensureView() ADOPTS an existing cr-occ element
+      # and returns early, so its scaffold is never built - the module renders
+      # nothing and then dies on a missing occTitle. A black screen caused
+      # entirely by the anchor being present. This shipped once.
+      - name: The modules mount themselves - no pre-created anchors
+        run: |
+          node -e "
+            const s=require('fs').readFileSync('index.html','utf8');
+            const bad=[...s.matchAll(/<[a-z]+[^>]*\\bid=[\"'](cr-show|cr-occ)[\"'][^>]*>/gi)];
+            if(bad.length){
+              for(const m of bad) console.error('::error::index.html pre-creates '+m[1]+' - the module will adopt it and never build its own scaffold');
+              process.exit(1);
+            }
+            console.log('no pre-created module mounts');
+          "
+
       - name: No secret ever committed here
         run: |
           # The publishable anon key is public by design and expected. A

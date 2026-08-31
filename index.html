@@ -177,10 +177,26 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
   </div>
 </div>
 
-<!-- Showcase and OC Colors mount themselves into these. Both are self-mounting
-     and take no DOM anchor from outside — measured in the extraction spike. -->
-<div id="cr-show"></div>
-<div id="cr-occ"></div>
+<!-- ⚠ NO MOUNT DIVS HERE, AND THAT IS THE FIX FOR A BLACK SCREEN.
+     I originally pre-created empty div elements with ids cr-show and cr-occ as
+     "helpful" anchors. OC Colors' ensureView() reads:
+
+         VIEW = document.getElementById('cr-occ');
+         if (VIEW) return VIEW;                      // adopt and RETURN
+         VIEW = document.createElement('div');       // ...otherwise build it
+         VIEW.innerHTML = [ occ-head ... b id=occTitle ... ];
+
+     (the markup above is written without angle brackets on purpose: a literal
+     tag inside a comment unbalances every naive tag counter that reads this
+     file, including this repo's own CI step. It already did once.)
+
+     so an empty div that already exists is ADOPTED and its scaffold is never
+     built — the module then renders nothing and showHub() dies on a missing
+     #occTitle. A black screen caused entirely by the anchor being there.
+
+     The extraction spike measured this and said it plainly: both modules are
+     self-mounting and take ZERO DOM anchors from outside. Providing one was
+     not neutral. Do not add them back. -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -239,11 +255,30 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
   window.currentUser = null;
   window.is_admin = function () { return !!window.__srAdmin; };
 
+  /* ⚠ THE CLOSE LEVER MUST MATCH HOW THE VIEW WAS SHOWN, and this function
+     originally wrote display:none onto both. That is documented damage:
+     Showcase is CLASS-shown (classList.add('open'), six sites), and an inline
+     display:none outranks the class rule its own open path sets — so the first
+     close left it permanently dead, rendering its markup into a hidden box.
+     That is exactly the "Showcase button doesn't work" report.
+
+     OC Colors really is display-shown, so display:none is right for it and
+     wrong for Showcase. Same function, two different levers, on purpose. */
   window.hideAllViews = function () {
-    ['cr-show', 'cr-occ'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.style.display = 'none';
-    });
+    try {
+      if (window.CardinalShowcase && window.CardinalShowcase.close) {
+        window.CardinalShowcase.close(false);
+      }
+    } catch (_) {}
+    /* ⚠ CONFIRM IT ACTUALLY CLOSED. A module's close() can no-op without
+       throwing — it clears the class through its own `view` reference, which is
+       null until its ensureView() has run, so it returns cleanly and leaves the
+       screen open. A catch cannot see that. */
+    var sh = document.getElementById('cr-show');
+    if (sh && sh.classList.contains('open')) sh.classList.remove('open');
+
+    var occ = document.getElementById('cr-occ');
+    if (occ) occ.style.display = 'none';
   };
   window.showHome = function () {
     window.hideAllViews();
@@ -399,7 +434,10 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
       open: function () { if (window.CardinalColors) window.CardinalColors.open(); else toast('OC Colors did not load.'); } },
     { key: 'studio', tag: 'Separate app', ext: 1, name: 'Studio',
       note: 'The tagged photo archive. Admin only, and its own application.',
-      href: 'https://studio.cardinalroster.com/' },
+      /* ⚠ NOT studio.cardinalroster.com — that subdomain does not exist and
+         returned 404. Studio is served by the Cardinal project at this path;
+         verified 200. Linking a URL I had not checked was the whole bug. */
+      href: 'https://app.cardinalroster.com/studio.html' },
     { key: 'visualizer', tag: 'Separate app', ext: 1, name: 'Exterior Visualizer',
       note: 'Approved renders, one tap. Its own application.',
       href: 'https://app.cardinalroster.com/visualizer/?present=1' }
