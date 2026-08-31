@@ -81,8 +81,23 @@ body{
 
 #srApp{display:none}
 #srApp.sr-on{display:block}
-.sr-bar{position:sticky;top:0;z-index:40;display:flex;gap:12px;align-items:center;
-  padding:10px 14px;background:#08090b;border-bottom:1px solid var(--sr-line,#1e2227)}
+/* ⚠ WRAPS ON A PHONE, and it did not before. At 414px the row overflowed:
+   "Prepare" was clipped mid-word, PRESENT WAS PUSHED OFF-SCREEN ENTIRELY, and
+   "Sign out" broke over two lines. Present being unreachable on the device the
+   Showroom is used on is not cosmetic — it is half the product. Caught in a
+   screenshot; every structural check passed while it was broken. */
+.sr-bar{position:sticky;top:0;z-index:40;display:flex;gap:10px;align-items:center;
+  flex-wrap:wrap;padding:10px 14px;background:#08090b;
+  border-bottom:1px solid var(--sr-line,#1e2227)}
+.sr-bar .sr-name{flex:0 0 auto}
+.sr-mode{flex:0 0 auto}
+.sr-mode button{white-space:nowrap}
+.sr-who{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-link{white-space:nowrap}
+@media (max-width:560px){
+  .sr-bar .sr-name{flex:1 1 100%}
+  .sr-spacer{display:none}
+}
 .sr-bar .sr-name{font:700 12px/1 -apple-system,sans-serif;letter-spacing:.15em;
   text-transform:uppercase;color:var(--sr-red,#c8202e)}
 .sr-spacer{flex:1}
@@ -337,10 +352,18 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
     return supa.storage.from('photos').createSignedUrls(list, secs || 3600)
       .then(function (r) {
         var out = {};
-        /* Key by the path the API answered for, never by array position —
-           a latent corruption fixed at 633 and not worth reintroducing. */
-        (r && r.data || []).forEach(function (row) {
-          if (row && row.path && row.signedUrl) out[row.path] = row.signedUrl;
+        if (!r || r.error || !Array.isArray(r.data)) return out;
+        /* ⚠ KEYED BY list[i] — THE PATH WE ASKED FOR — byte-for-byte as
+           Cardinal's own signedPhotoMap does it. I originally keyed by
+           `row.path` and wrote a comment defending it with build 633's lesson.
+           That lesson belongs to signMany() in the Showcase module, which is a
+           DIFFERENT function; Cardinal's signedPhotoMap has always keyed by
+           position. Every consumer then looks the URL up by the path it passed
+           in, so keying by anything else returns an empty map, no photograph
+           resolves, and you get correct chrome wrapped around black rectangles.
+           Extend the existing convention; do not invent a better one. */
+        r.data.forEach(function (d, i) {
+          if (d && d.signedUrl && !d.error) out[list[i]] = d.signedUrl;
         });
         return out;
       })
