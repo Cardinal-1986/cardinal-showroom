@@ -45,6 +45,34 @@ jobs:
             for f in api/*.js; do node --check "$f"; done
           fi
 
+      # ⚠ THE CHECK THAT WOULD HAVE CAUGHT THE FIRST BROKEN DEPLOY. api/detect.js
+      # was copied from Cardinal without its sibling `_staff.js`, so the function
+      # crashed at MODULE LOAD — FUNCTION_INVOCATION_FAILED on every request,
+      # including a GET that should have been a plain 405. `node --check` above
+      # cannot see it: the file parses perfectly, it just imports something that
+      # is not there. Nothing else in this repo looks at a route's imports.
+      #
+      # Copying a serverless route is not copying the route: its siblings, its
+      # dependencies and its vercel.json budget all travel with it.
+      - name: Every local import in api/ resolves
+        run: |
+          node -e "
+            const fs=require('fs'),path=require('path');
+            if(!fs.existsSync('api')){console.log('no api/');process.exit(0);}
+            let bad=0,n=0;
+            for(const f of fs.readdirSync('api').filter(x=>x.endsWith('.js'))){
+              const s=fs.readFileSync('api/'+f,'utf8');
+              for(const m of s.matchAll(/^\s*import[^'\"]*['\"](\.[^'\"]+)['\"]/gm)){
+                n++;
+                if(!fs.existsSync(path.join('api',m[1]))){
+                  bad++; console.error('::error::'+f+' imports '+m[1]+' which is not in this repo - the function will fail at load');
+                }
+              }
+            }
+            if(bad)process.exit(1);
+            console.log(n+' local import(s) in api/, all resolve');
+          "
+
       # ⚠ THE FENCE THAT MAKES THIS A SEPARATE APPLICATION. Trigger 1 is not
       # satisfied by files living in their own repo if CRM code follows them
       # here. Same shape as gate_807 for the Visualizer.
