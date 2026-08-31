@@ -102,7 +102,12 @@
   font:600 13.5px var(--occ-sans,sans-serif); -webkit-tap-highlight-color:transparent;
 }
 #cr-occ .occ-chip[aria-pressed="true"]{
-  background:var(--occ-red,#c8202e); border-color:var(--occ-red,#c8202e); color:#fff;
+  /* 1186: --occ-pink-deep, not --occ-red. 623b measured this exact pairing and
+     built the token for it -- "5.79:1 under small WHITE text" -- then applied it
+     to .occ-sty and .cmp-c4 and missed three siblings. White on the brand pink
+     at 13.5px is 4.25:1, under the 4.5 floor. The border moves with the fill:
+     leaving it --occ-red rings a deep-pink chip in a lighter pink. */
+  background:var(--occ-pink-deep,#C4007A); border-color:var(--occ-pink-deep,#C4007A); color:#fff;
 }
 #cr-occ .occ-count{padding:6px 16px 10px; font-size:13px; color:var(--occ-dim,#9AA3AE)}
 
@@ -135,7 +140,7 @@
 }
 #cr-occ .occ-tag.coty{background:var(--occ-gold,#C9A227); color:#1A1400}
 #cr-occ .occ-tag.was{background:var(--occ-goldq,#3A3208); color:var(--occ-gold,#C9A227)}
-#cr-occ .occ-tag.new{background:var(--occ-red,#c8202e); color:#fff}
+#cr-occ .occ-tag.new{background:var(--occ-pink-deep,#C4007A); color:#fff}  /* 1186: 11px white — 4.25:1 on the brand pink */
 #cr-occ .occ-tag.disc{background:var(--occ-raise,#12151A); color:var(--occ-dim,#9AA3AE); border:1px solid var(--occ-line,#1D2126)}
 
 #cr-occ .occ-empty{padding:40px 16px; text-align:center; color:var(--occ-dim,#9AA3AE)}
@@ -236,7 +241,7 @@
 #cr-occ .occ-actions{display:flex; flex-wrap:wrap; gap:10px; padding:16px}
 #cr-occ .occ-btn{
   min-height:44px; padding:0 16px; border-radius:10px; cursor:pointer;
-  background:var(--occ-red,#c8202e); color:#fff; border:0;
+  background:var(--occ-pink-deep,#C4007A); color:#fff; border:0;   /* 1186: 15px white — 4.25:1 on the brand pink */
   font:700 15px var(--occ-sans,sans-serif); -webkit-tap-highlight-color:transparent;
 }
 #cr-occ .occ-btn.ghost{background:transparent; color:var(--occ-ink,#EDEFF2); border:1px solid var(--occ-line,#1D2126)}
@@ -459,7 +464,11 @@
     content:attr(data-nophoto); position:absolute; right:26px; top:4px; z-index:0;
     font:800 132px/1 var(--occ-sans,sans-serif); letter-spacing:-.06em; color:#181D24;
   }
-  #cr-occ[data-style="roofs"] .occ-line[data-nophoto] .occ-lsub{color:#A9B2BC}
+  /* 1186: a light-grey ink rule stood here and is GONE. It was written for a
+     DARK tile; 623 made [data-nophoto] tiles white and set the same elements to
+     --occ-panel-dim at identical specificity, later in the file, so it never
+     applied again. Its value is not quoted here on purpose — a retired colour
+     named in a comment is the next grep's false positive. */
 
   /* ---- COMPARE: the hub is a board ---- */
   #cr-occ[data-style="compare"]:not(.line):not(.detail) .occ-hub{max-width:none; padding:24px 40px 60px}
@@ -564,8 +573,14 @@
   color:var(--occ-red,#c8202e);
 }
 #cr-occ .occ-proof .pf span{
+  /* 1186: NO color HERE — it inherits --occ-panel-dim from .pf, 7.05:1.
+     623's flyer skin turned .pf from a dark card into a WHITE panel and
+     recoloured .pf itself, but this child rule is more specific and kept the
+     dark-theme ink, so the SureNail proof captions have been rendering at
+     1.62:1 on white ever since — on a screen handed to a homeowner.
+     Deleting the declaration beats replacing it: the caption can no longer
+     drift from the panel it sits on. */
   display:block; margin-top:7px; font-size:11.5px; line-height:1.35;
-  color:var(--occ-ink2,#C6CCD4);
 }
 #cr-occ .occ-pbasis{
   font-size:11.5px; line-height:1.45; color:var(--occ-dim,#9AA3AE); margin-bottom:4px;
