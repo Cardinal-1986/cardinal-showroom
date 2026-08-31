@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sentinel self-test</title>
+
+<!--
+  ONE DELIBERATE INSTANCE OF EVERY DEFECT THE SENTINEL CLAIMS TO CATCH.
+
+  This exists because of the rule the project already lives by: a gate that
+  has never been seen to go red proves nothing. The sentinel's silence on a
+  real artifact is only meaningful if the sentinel is known to speak.
+
+  It nearly was not. Two checks were quietly incapable of firing when first
+  written, and both looked perfectly reasonable in the source:
+
+    - COLLAPSE skipped any parent with overflow:hidden, calling it "a
+      deliberate crop". Tiles clip. So it stayed silent through build 816 —
+      a 362x44 tile holding a 358x168 image — which is the precise defect it
+      was written for.
+
+    - DEAD descended into @media blocks without checking whether the media
+      matched, and reported the build-817 mobile rule as dead at desktop
+      width. That rule is the FIX for the bug DEAD exists to catch.
+
+  Run:  node sentinel.js sentinel_selftest.html --viewports 900x800 --json
+  Every id below must appear. If one does not, that check is inert and its
+  quiet on a real page means nothing at all.
+
+  ⚠ Keep each case MINIMAL and keep them isolated from each other. A case
+  that accidentally triggers a second check makes a broken check look alive.
+-->
+
+<style>
+  :root { color-scheme: dark; }
+  body { background: #0b0d12; color: #e8ecf3; font: 14px/1.5 system-ui, sans-serif;
+         margin: 0; padding: 24px; }
+  h2 { font-size: 13px; color: #8b93a3; margin: 26px 0 8px; font-weight: 700; }
+  .case { border: 1px solid #232833; border-radius: 10px; padding: 14px; margin-bottom: 8px; }
+
+  /* ── INK: 11px grey on the page ground. Arithmetic, not opinion. ────── */
+  .ink-bad { color: #3a3f4a; font-size: 11px; }
+
+  /* ── COLLAPSE: the build-816 shape. The parent clips, which is exactly
+        why the first version of the check never saw it. ───────────────── */
+  .collapse-host { height: 40px; overflow: hidden; background: #161a22; }
+  .collapse-host img { display: block; width: 200px; height: 180px; }
+
+  /* ── OVERLAP: two grid items in one cell. ────────────────────────────── */
+  .overlap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .overlap-grid > * { background: #1b2430; height: 60px; border-radius: 6px; }
+  .overlap-grid > .a { grid-column: 1; grid-row: 1; }
+  .overlap-grid > .b { grid-column: 1; grid-row: 1; margin-top: 20px; }
+
+  /* ── OVERFLOW: wider than any viewport it will be run at. ───────────── */
+  .overflow-bar { width: 3200px; height: 8px; background: #232833; }
+
+  /* ── DEAD: equal specificity, later rule wins. Build 817 exactly.
+        .dead-a is (0,1,0); .dead-b is (0,1,0) and comes second. ───────── */
+  .dead-a { height: 30px; background-color: #2a1620; }
+  .dead-b { height: 70px; background-color: #16202a; }
+
+  /* ── OVERRIDDEN: beaten by something deliberately MORE specific. This is
+        the cascade working, and must NOT be reported as DEAD. ─────────── */
+  .over-base { height: 30px; background-color: #202a16; }
+  #overHost .over-base { height: 64px; background-color: #1a2230; }
+
+  /* ── MOBILE-FIRST: a base rule beaten by an EQUALLY specific rule inside a
+        MATCHING @media block. Specificity cannot tell this from the .dead-a
+        case above — both are (0,1,0) and both lose to a later rule — but one
+        is the responsive idiom and the other is a source-order accident. The
+        first CRM sweep raised six of these in one run and they buried the
+        real findings. Must NOT be reported as DEAD.                       */
+  .mf-base { height: 30px; background-color: #2a2016; }
+  @media (min-width: 600px) { .mf-base { height: 72px; background-color: #16162a; } }
+
+  /* ── AND THE CONVERSE, which IS build 817 and MUST still be reported: the
+        rule inside the media query is the one that LOSES, to a later
+        unconditional rule. If the mobile-first exemption were written the
+        lazy way — "either side conditional" — this would go quiet and the
+        check would stop catching the bug it was written for.             */
+  @media (min-width: 600px) { .mf-loser { height: 44px; background-color: #2a1616; } }
+  .mf-loser { height: 88px; background-color: #162a2a; }
+
+  /* ── LINE-CLAMP ENGINE MAPPING: display:-webkit-box with -webkit-line-clamp
+        computes to flow-root in modern Chromium — the engine IMPLEMENTING the
+        standardized clamp, not the cascade losing. The production audit's O5
+        called the dispatch name-clamp DEAD off exactly this mismatch; the
+        clamp measured working (2 lines from a 150-char name). Must NOT be
+        reported as DEAD.                                                  */
+  .clamp-ok { display: -webkit-box; -webkit-box-orient: vertical;
+              -webkit-line-clamp: 2; overflow: hidden; width: 120px; }
+</style>
+</head>
+<body>
+
+<h2>INK — 11px #3a3f4a on #0b0d12, about 1.8:1</h2>
+<div class="case"><span class="ink-bad">this text is below the contrast floor</span></div>
+
+<h2>COLLAPSE — a 40px clipping box holding a 180px image</h2>
+<div class="case">
+  <div class="collapse-host">
+    <img alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==">
+  </div>
+</div>
+
+<h2>OVERLAP — two grid items sharing one cell</h2>
+<div class="case">
+  <div class="overlap-grid"><div class="a"></div><div class="b"></div><div></div></div>
+</div>
+
+<h2>OVERFLOW — a 3200px bar</h2>
+<div class="case"><div class="overflow-bar"></div></div>
+
+<h2>DEAD — .dead-a loses to .dead-b at equal specificity</h2>
+<div class="case"><div class="dead-a dead-b">both rules match; the later one wins</div></div>
+
+<h2>LINE-CLAMP — -webkit-box computing flow-root is the engine, not a loss</h2>
+<div class="case"><div class="clamp-ok">a name long enough to need clamping to two lines on a narrow card, which must not read as DEAD</div></div>
+
+<h2>OVERRIDDEN — a base rule beaten by a more specific one (not a defect)</h2>
+<div class="case" id="overHost"><div class="over-base">normal cascade</div></div>
+
+<h2>MOBILE-FIRST — a base rule beaten by a matching @media rule (not a defect)</h2>
+<div class="case"><div class="mf-base">responsive override, equal specificity</div></div>
+
+<h2>BUILD 817 — a @media rule beaten by a later unconditional one (IS a defect)</h2>
+<div class="case"><div class="mf-loser">this one must still be reported</div></div>
+
+<h2>FLOOR — the 44px floor beaten by an id-scoped min-height (the #payView shape)</h2>
+<div class="case" id="floorHost">
+  <button type="button" id="floor-btn" class="floor-ctl">beaten floor — must be reported</button>
+  <button type="button" id="floor-pad-btn" class="floor-pad">beaten floor with a 44px ::after pad — must NOT be</button>
+</div>
+<!-- the floor sheet: the check keys on this exact style id -->
+<style id="cr-touch44-styles">.floor-ctl{min-height:44px}.floor-pad{min-height:44px}</style>
+<style>
+  /* the beaters — id-scoped, the #payView shape */
+  #floorHost .floor-ctl { min-height: 30px; }
+  #floorHost .floor-pad { min-height: 30px; position: relative; }
+  #floorHost .floor-pad::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); height: 44px; }
+</style>
+
+<h2>CONTAIN — containment on a box with no scrollport (BUG_CLASSES 56)</h2>
+<div class="case">
+  <!-- fires: contains, but nothing to scroll -->
+  <div id="contain-bad" style="overscroll-behavior:contain;height:40px">dead to a finger on iOS</div>
+  <!-- must NOT fire: a real scroller that contains is correct -->
+  <div id="contain-ok" style="overscroll-behavior:contain;overflow-y:auto;height:40px">
+    <div style="height:200px">a genuine scrollport</div>
+  </div>
+</div>
+
+<h2>CLIPPED — a strip hiding content with no scrollbar</h2>
+<style>
+  .clipstrip{display:flex;gap:20px;width:200px;overflow-x:auto;white-space:nowrap}
+  /* the silent one: BOTH hiding mechanisms, exactly as the app does it */
+  #clip-silent{scrollbar-width:none}
+  #clip-silent::-webkit-scrollbar{display:none}
+  /* the control: same overflow, same content, but the bar is left visible */
+  #clip-hasbar{scrollbar-width:auto}
+  /* the second control: bar hidden, but nothing overflows */
+  #clip-fits{scrollbar-width:none;width:600px}
+  #clip-fits::-webkit-scrollbar{display:none}
+</style>
+<div class="case">
+  <div class="clipstrip" id="clip-silent"><b>One</b><b>Two</b><b>Three</b><b>Four</b><b>Five</b></div>
+  <div class="clipstrip" id="clip-hasbar"><b>One</b><b>Two</b><b>Three</b><b>Four</b><b>Five</b></div>
+  <div class="clipstrip" id="clip-fits"><b>One</b><b>Two</b></div>
+</div>
+
+<h2>UNWIRED — a button nothing listens to</h2>
+<div class="case">
+  <button type="button" id="wired">this one is wired</button>
+  <button type="button" id="dead-button">this one does nothing</button>
+  <button type="button" id="data-delegated" data-st-act="go">wired only through a document-level data hook</button>
+</div>
+
+<h2>GRADIENT BORDER — the ring must not be scored, but a plain gradient must</h2>
+<!-- Both cards carry dark-red text. The first uses the gradient-BORDER idiom:
+     a near-white fill clipped to padding-box under a red ring clipped to
+     border-box. Its text sits on the FILL and reads fine. The second is an
+     ordinary red gradient with no tighter layer, where the same ink genuinely
+     is unreadable and MUST still be caught — otherwise this fix would blind
+     the probe to every card in the app that paints a plain gradient. -->
+<div style="background-image:linear-gradient(160deg,rgb(250,248,247),rgb(255,255,255)),
+            linear-gradient(125deg,rgb(196,24,15),rgb(126,20,16));
+            background-clip:padding-box,border-box;border:2px solid transparent;
+            padding:14px;margin:10px 0">
+  <span class="st-gb-ring" style="color:rgb(143,22,32)">st-gradborder-ink must NOT be reported</span>
+</div>
+<div style="background-image:linear-gradient(125deg,rgb(196,24,15),rgb(126,20,16));
+            padding:14px;margin:10px 0">
+  <span class="st-gb-plain" style="color:rgb(143,22,32)">st-plaingrad-ink MUST still be reported</span>
+</div>
+
+<h2>OFF-CANVAS — a shut drawer must not be scored, but an OPEN one must</h2>
+<!-- Both carry the SAME unreadable ink on the same ground. The only difference
+     is where they sit. Asserted in both directions on purpose: a check that had
+     simply gone silent for every position:fixed element would pass the negative
+     half alone, and that is the shape of a check that cannot fail. -->
+<div id="offcanvas-drawer" style="position:fixed;top:0;left:0;width:320px;height:400px;
+     transform:translateX(-320px);pointer-events:none;background:#1e1113;z-index:5">
+  <span class="st-oc-hidden" style="color:#232326">st-offcanvas-ink must NOT be reported</span>
+</div>
+<div id="onscreen-panel" style="position:fixed;top:0;right:0;width:200px;height:60px;
+     background:#1e1113;z-index:5">
+  <span class="st-oc-shown" style="color:#232326">st-onscreen-ink MUST still be reported</span>
+</div>
+
+<h2>EMOJI ARE NOT INK — the font paints the glyph, not `color`</h2>
+<!-- All three carry the SAME failing ink on the SAME ground (1.02:1). The only
+     difference is what the text IS.
+     A colour emoji is painted by the emoji font in its own colours; `color`
+     never reaches it, so scoring `color` measures a value that does not paint.
+     Headless Chromium ships no emoji font, falls back to a MONOCHROME glyph
+     that does take `color`, and manufactures a failure that cannot happen on
+     any device Theo owns — it reported span.cvic at 1.02:1 on the client
+     screen, both themes, both widths, on the 25 Aug sweep.
+     THREE fixtures, not two, because the tempting over-broad fix is "skip any
+     text containing an emoji", which would silently stop scoring every label
+     that happens to carry one. Only ENTIRELY-pictographic text is skipped.
+     ⚠ Distinct classes on purpose: where() keys on tag+id+class, so identical
+     bare spans collapse to ONE finding and the half that must fire would pass
+     only because the other half had been deduped away. I have shipped that
+     exact collision twice in one day. -->
+<div style="background:rgb(36,26,26);padding:14px;margin:10px 0">
+  <span class="st-em-only"  style="color:rgb(27,27,27)">&#128737;&#65039;</span>
+  <span class="st-em-word"  style="color:rgb(27,27,27)">st-emojiword-ink MUST still be reported</span>
+  <span class="st-em-mixed" style="color:rgb(27,27,27)">&#128737;&#65039; st-emojimix-ink MUST still be reported</span>
+</div>
+
+<h2>A CAP THAT TRUNCATES MUST SAY SO</h2>
+<!-- The reporter bounds each bucket per render (INK at 25) so one broken
+     screen cannot flood a sweep. Until 25 Aug every one of those eight caps
+     was SILENT: a render with 30 ink failures printed 25 and lost five with
+     no trace, and because the total came out SMALLER it read as progress
+     rather than as an incomplete run. CLAUDE.md's assertion-fault #2.
+     30 failures, all identical in shape and each with its own class so none
+     is deduped, placed LAST in the document on purpose: res.ink is built in
+     document order, so the fixtures above are already inside the cap and
+     cannot be evicted by this block. -->
+<div style="background:rgb(36,26,26);padding:8px;margin:10px 0">
+  <span class="st-cap00" style="color:rgb(30,30,30)">st-cap-ink 0</span>
+  <span class="st-cap01" style="color:rgb(30,30,30)">st-cap-ink 1</span>
+  <span class="st-cap02" style="color:rgb(30,30,30)">st-cap-ink 2</span>
+  <span class="st-cap03" style="color:rgb(30,30,30)">st-cap-ink 3</span>
+  <span class="st-cap04" style="color:rgb(30,30,30)">st-cap-ink 4</span>
+  <span class="st-cap05" style="color:rgb(30,30,30)">st-cap-ink 5</span>
+  <span class="st-cap06" style="color:rgb(30,30,30)">st-cap-ink 6</span>
+  <span class="st-cap07" style="color:rgb(30,30,30)">st-cap-ink 7</span>
+  <span class="st-cap08" style="color:rgb(30,30,30)">st-cap-ink 8</span>
+  <span class="st-cap09" style="color:rgb(30,30,30)">st-cap-ink 9</span>
+  <span class="st-cap10" style="color:rgb(30,30,30)">st-cap-ink 10</span>
+  <span class="st-cap11" style="color:rgb(30,30,30)">st-cap-ink 11</span>
+  <span class="st-cap12" style="color:rgb(30,30,30)">st-cap-ink 12</span>
+  <span class="st-cap13" style="color:rgb(30,30,30)">st-cap-ink 13</span>
+  <span class="st-cap14" style="color:rgb(30,30,30)">st-cap-ink 14</span>
+  <span class="st-cap15" style="color:rgb(30,30,30)">st-cap-ink 15</span>
+  <span class="st-cap16" style="color:rgb(30,30,30)">st-cap-ink 16</span>
+  <span class="st-cap17" style="color:rgb(30,30,30)">st-cap-ink 17</span>
+  <span class="st-cap18" style="color:rgb(30,30,30)">st-cap-ink 18</span>
+  <span class="st-cap19" style="color:rgb(30,30,30)">st-cap-ink 19</span>
+  <span class="st-cap20" style="color:rgb(30,30,30)">st-cap-ink 20</span>
+  <span class="st-cap21" style="color:rgb(30,30,30)">st-cap-ink 21</span>
+  <span class="st-cap22" style="color:rgb(30,30,30)">st-cap-ink 22</span>
+  <span class="st-cap23" style="color:rgb(30,30,30)">st-cap-ink 23</span>
+  <span class="st-cap24" style="color:rgb(30,30,30)">st-cap-ink 24</span>
+  <span class="st-cap25" style="color:rgb(30,30,30)">st-cap-ink 25</span>
+  <span class="st-cap26" style="color:rgb(30,30,30)">st-cap-ink 26</span>
+  <span class="st-cap27" style="color:rgb(30,30,30)">st-cap-ink 27</span>
+  <span class="st-cap28" style="color:rgb(30,30,30)">st-cap-ink 28</span>
+  <span class="st-cap29" style="color:rgb(30,30,30)">st-cap-ink 29</span>
+</div>
+
+<script>
+  /* Only the first button gets a handler. The second is BUG_CLASSES 16:
+     drawn, enabled, and inert — the Studio Archive button, 614 to 632. */
+  document.getElementById('wired').addEventListener('click', function () {});
+  /* 950: the document-level dispatcher shape this app uses everywhere */
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('[data-st-act]')) { /* handled */ }
+  });
+  /* the FLOOR fixtures are wired so they do not ALSO trip UNWIRED — a case
+     that fires two checks makes a broken check look alive */
+  document.getElementById('floor-btn').addEventListener('click', function () {});
+  document.getElementById('floor-pad-btn').addEventListener('click', function () {});
+</script>
+
+<h2>DEADTAP — pressable styling, pointer-events:none (class 71, build 1172)</h2>
+<div class="case">
+  <div id="dt-dead" style="cursor:pointer;pointer-events:none;padding:12px">
+    Dead switcher <span id="dt-inner">inherited child</span>
+  </div>
+  <div id="dt-plain" style="pointer-events:none;padding:4px">decorative pass-through, no pressable styling</div>
+  <button id="dt-live" onclick="void 0" style="cursor:pointer;padding:10px">a live button</button>
+  <!-- The decorative-child idiom. `cursor` INHERITS from the button, so both
+       spans advertise a pointer; pointer-events:none on them is how the click
+       is made to land on the BUTTON rather than on whichever glyph the finger
+       hit. The Showcase's showroom exit is this exact shape, and the first
+       Showroom sweep reported both of its children as unreachable while the
+       button was perfectly pressable. Neither span may be reported. -->
+  <button id="dt-host" onclick="void 0" style="cursor:pointer;padding:10px;position:relative">
+    <span id="dt-ring" style="pointer-events:none;position:absolute;inset:0;border:1px solid #888"></span>
+    <span id="dt-glyph" style="pointer-events:none">&#10005;</span>
+  </button>
+</div>
+
+<h2>DUPE — one concept, two doors in one menu (build 1171)</h2>
+<div class="case">
+  <nav id="dupe-nav">
+    <button onclick="void 0">Switch portal</button>
+    <button onclick="void 0">Switch Portal</button>
+    <button onclick="void 0">Clients</button>
+    <div id="dupe-sec" role="button" aria-expanded="false" onclick="void 0">Production</div>
+    <button onclick="void 0">Production</button>
+  </nav>
+  <div id="dupe-cards">
+    <div><b>Card one</b> <button onclick="void 0">Delete</button></div>
+    <div><b>Card two</b> <button onclick="void 0">Delete</button></div>
+  </div>
+</div>
+
+<h2>BOOK — the board wearing another portal's numbers (build 1173)</h2>
+<div class="case">
+  <div id="mainView"><div id="pipeRow">
+    <button class="pipebtn" data-stg="Lead" onclick="void 0"><span class="pcount">5</span> Lead</button>
+    <button class="pipebtn" data-stg="Prospect" onclick="void 0"><span class="pcount">1</span> Prospect</button>
+  </div></div>
+</div>
+<script>
+  /* the app-shaped globals BOOK needs: one retail Lead and one retail
+     Prospect, so the rendered "5" is a lie and the rendered "1" is true —
+     the firing and the quiet direction live in one fixture. */
+  window.cacheProjects = [
+    { stage: 'Lead',     checklist: '{"lead":{"claim_type":"retail"}}' },
+    { stage: 'Prospect', checklist: '{"lead":{"claim_type":"retail"}}' }
+  ];
+  window.projClaimType = function (p) { try { return JSON.parse(p.checklist).lead.claim_type; } catch (e) { return 'unknown'; } };
+  window.normStage = function (st) { return st; };
+  document.body.dataset.crm = 'retail';
+</script>
+
+<h2>CONSOLE — app code logging an error (only the firing direction can be
+staged here: the rig-abort filter needs the real mock's aborted loads)</h2>
+<div class="case"><script>console.error('selftest: a component logged an error');</script>
+  <span>the script above logged one console.error</span></div>
+
+<h2>XSS — a hostile string executing as markup (the canary the hostile seed watches)</h2>
+<div class="case" id="xss-sink"></div>
+<script>
+  /* a renderer that innerHTML'd a hostile name unescaped looks exactly like
+     this — the img fires onerror and sets the canary. */
+  document.getElementById('xss-sink').innerHTML =
+    '<img src="data:image/gif;base64,x" onerror="window.__XSS__=1" alt="">';
+</script>
+</body>
+</html>

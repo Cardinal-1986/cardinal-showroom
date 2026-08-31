@@ -120,3 +120,42 @@ jobs:
           # evidence, and this one was green-hatted red for five commits.
           node .github/scan_secret.js --selftest
           node .github/scan_secret.js
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # The sentinel, ratcheted. Separate job because it needs Chromium and takes
+  # minutes, and because a slow job attached to the fast one gets skipped.
+  #
+  # ⚠ IT RUNS ON EVERY PUSH, and it is not advisory here. Five of the six
+  # defects this app shipped with on 31 Aug were invisible to every mechanical
+  # check in the job above — four of them live one click past the sign-in form
+  # and one only at a phone width. That is the gap this job exists to close.
+  #
+  # Known debt is written down in sentinel_baseline.json WITH A REASON and
+  # blocks nothing; anything new is red the build it lands.
+  sentinel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install Chromium
+        run: npm i -D playwright@1.47.2 && npx playwright install --with-deps chromium
+
+      # The instrument first. Two of its own checks were incapable of firing
+      # when written, and two MORE were found reporting correct code as broken
+      # on this repo's first sweep. Silence from an instrument never seen to
+      # speak is not evidence.
+      - name: The sentinel's own selftest
+        run: node .claude/skills/cardinal-build/scripts/sentinel.js --selftest
+
+      # And the gate's selftest: against an empty baseline the same sweep must
+      # come back RED, or the comparison is comparing nothing.
+      - name: The gate can go red
+        run: |
+          cp .claude/skills/cardinal-build/scripts/sentinel_baseline.json /tmp/baseline.bak
+          echo '{}' > .claude/skills/cardinal-build/scripts/sentinel_baseline.json
+          node .claude/skills/cardinal-build/scripts/gate_sentinel.mjs --selftest
+          cp /tmp/baseline.bak .claude/skills/cardinal-build/scripts/sentinel_baseline.json
+
+      - name: Sentinel sweep — 13 states x 4 viewports
+        run: node .claude/skills/cardinal-build/scripts/gate_sentinel.mjs

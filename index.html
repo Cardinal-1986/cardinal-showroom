@@ -49,6 +49,17 @@
   --sr-bg:#050607; --sr-panel:#0e1013; --sr-line:#1e2227;
   --sr-ink:#f4f6f8; --sr-dim:#98a2ad; --sr-red:#c8202e; --sr-gold:#c9a227;
   --sr-ok:#3f9e5a;
+  /* ⚠ TWO REDS, AND THE SPLIT IS THE WHOLE POINT. --sr-red is cardinal red as
+     a GROUND — the button, the focus ring — where the ink on it is white and
+     the pairing is correct. As INK on this Blackout ground it is 3.51:1 on the
+     header bar and 3.36:1 on the sign-in card, both under the 4.5 floor, and
+     the sentinel caught both on its first sweep of the app.
+     Deepening --sr-red itself would have restyled the button and the focus
+     ring for a defect neither of them has — the same mistake build 527 made,
+     where one computed replacement fixed dark and broke light. So the ink gets
+     its own token: the same hue lifted until it clears, 4.85:1 on the bar and
+     4.64:1 on the card, measured rather than eyeballed. */
+  --sr-red-ink:#e04452;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -64,7 +75,7 @@ body{
 .sr-card{width:100%;max-width:380px;background:var(--sr-panel,#0e1013);
   border:1px solid var(--sr-line,#1e2227);border-radius:14px;padding:28px 24px}
 .sr-mark{font:700 13px/1 -apple-system,sans-serif;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--sr-red,#c8202e);margin:0 0 6px}
+  text-transform:uppercase;color:var(--sr-red-ink,#e04452);margin:0 0 6px}
 .sr-h1{font:600 22px/1.25 -apple-system,sans-serif;margin:0 0 4px;color:var(--sr-ink,#f4f6f8)}
 .sr-sub{font:400 13px/1.45 -apple-system,sans-serif;color:var(--sr-dim,#98a2ad);margin:0 0 20px}
 .sr-field{display:block;margin:0 0 12px}
@@ -99,7 +110,7 @@ body{
   .sr-spacer{display:none}
 }
 .sr-bar .sr-name{font:700 12px/1 -apple-system,sans-serif;letter-spacing:.15em;
-  text-transform:uppercase;color:var(--sr-red,#c8202e)}
+  text-transform:uppercase;color:var(--sr-red-ink,#e04452)}
 .sr-spacer{flex:1}
 .sr-mode{display:flex;border:1px solid var(--sr-line,#1e2227);border-radius:999px;overflow:hidden}
 .sr-mode button{border:0;background:transparent;color:var(--sr-dim,#98a2ad);
