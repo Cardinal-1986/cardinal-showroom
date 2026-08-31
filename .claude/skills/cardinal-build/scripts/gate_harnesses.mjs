@@ -48,13 +48,26 @@ const BASELINE = path.join(HERE, 'harness_baseline.json');
    drive Chromium through playwright and are NOT covered here — a browser
    install is a separate decision with its own failure modes, and pretending
    otherwise would be a coverage claim this job cannot honour. */
+/* ⚠ TWO HARNESSES WERE REMOVED FROM THIS REPO, NOT BASELINED, AND THE
+   DIFFERENCE MATTERS. A harness that cannot run here is not debt to carry —
+   it is a file that looks like coverage and provides none, which is the exact
+   shape of the secret check that failed on its own definition for five pushes.
+
+     harness_vision.js  asserts showMain, isVisionHost and CardinalLanding.
+                        Those are CRM concepts. The Showroom has no landing
+                        screen and no vision host; the whole point of the
+                        relocation is that it never will.
+     harness_tray.js    needs studio.html as its second artifact. Studio is a
+                        SEPARATE APPLICATION, deliberately not in this repo,
+                        so the harness crashes on a missing file before its
+                        first assertion.
+
+   Both still run in Cardinal, where they belong and where they are green. */
 export const HARNESSES = [
   { name: 'harness_showcase.js', args: a => [a.app] },
   { name: 'harness_walk.js',     args: a => [a.app] },
-  { name: 'harness_tray.js',     args: a => [a.app, a.studio] },
   { name: 'harness_ourroofs.js', args: a => [a.app] },
   { name: 'harness_colors.js',   args: a => [a.app] },
-  { name: 'harness_vision.js',   args: a => [a.app] },
 ];
 
 /* Four output shapes exist in this repo and scoring on one of them is how a

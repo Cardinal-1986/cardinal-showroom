@@ -183,11 +183,39 @@ async function boot(opts) {
     }, writable: false
   });
 
-  Object.defineProperty(w, 'supa', { value: makeSupa(state), writable: false });
-  Object.defineProperty(w, 'is_admin', { value: () => opts.admin !== false, writable: false });
+  /* ⚠ LOCK WITH A SETTER, NOT WITH writable:false — the difference is the whole
+     "shell DOM gap" this harness was carrying against the Showroom.
+     `writable:false` + a STRICT-MODE assignment is a TypeError, not a silent
+     no-op. The Showroom shell is one strict IIFE that does `window.supa = supa`
+     near the top, so the old lock did not protect the mock: it THREW, killed
+     the entire shell before it defined hideAllViews or drew the launcher, and
+     every later assertion failed for a reason that had nothing to do with what
+     it was testing. The app was fine; the lock was the bug.
+     A getter with a swallowing setter keeps the mock AND lets the app's
+     assignment succeed, which is what "lock your mocks" was always trying to
+     buy. */
+  const _supa = makeSupa(state);
+  Object.defineProperty(w, 'supa', { get: () => _supa, set: () => {}, configurable: true });
+  const _admin = () => opts.admin !== false;
+  Object.defineProperty(w, 'is_admin', { get: () => _admin, set: () => {}, configurable: true });
   w.signedPhotoMap = async (paths) => {
     const out = {}; paths.forEach(p => { out[p] = 'https://signed.example/' + p; }); return out;
   };
+  /* ⚠ SEED THE SESSION, THEN LOCK THE MOCK — in that order, and both matter.
+     The Showroom shell defines its OWN window.aiHeaders in an inline script,
+     so a plain assignment here is overwritten at boot and the harness ends up
+     testing nothing (the "lock your mocks" law, in the aiHeaders slot rather
+     than the supa one). Seeding storage first means the app's real function
+     produces a real token from its own code path when it wins, which is the
+     thing worth testing; defineProperty covers the tree where no such function
+     exists. Both auth keys are seeded because the two trees use different ones
+     — cr-showroom-auth here, the supabase-js default in the CRM — and one
+     harness has to serve both. */
+  try {
+    const tok = JSON.stringify({ access_token: 'tok', currentSession: { access_token: 'tok' } });
+    w.localStorage.setItem('cr-showroom-auth', tok);
+    w.localStorage.setItem('sb-yipslubcptjoarblzbpl-auth-token', tok);
+  } catch (_) {}
   w.aiHeaders = async () => ({ 'Content-Type': 'application/json', Authorization: 'Bearer tok' });
   w.fetch = async (url, init) => {
     if (String(url).slice(0, 5) === 'data:') {
@@ -344,6 +372,21 @@ const clickTab = (d, name) => d.querySelector(`[data-tab="${name}"]`).click();
     /* Resolution independence: the stored value is a fraction and the style is
        a percentage, so one row is correct on a phone and at 1180px. */
     const b0 = el.querySelector('[data-box="0"]');
+    /* ⚠ REPORT, DO NOT CRASH. When the review pane does not render — which is
+       exactly what happens against the Showroom shell today — b0 is null and
+       every assertion below used to die on `null.style`, taking the harness
+       down mid-suite. BUG_CLASSES 37: a check that crashes reads as "not
+       green" when it really means "not measured", and it silently drops the
+       six assertions that follow it. Fail them honestly instead. */
+    if (!b0) {
+      ['boxes are positioned in PERCENT, not pixels',
+       'severity drives the box class',
+       'the dropped count is surfaced, not swallowed',
+       'an unheard-of defect key still renders',
+       'vocabulary skew is warned about once'
+      ].forEach(n => ok(n, false, 'the review pane rendered no boxes'));
+      return;
+    }
     /* Assert on the UNIT and the value, not the literal string the module
        wrote: CSSOM normalises '30.000%' to '30%' on the way back out, which is
        not the module changing its mind about anything. */

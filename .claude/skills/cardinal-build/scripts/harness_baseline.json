@@ -1,0 +1,51 @@
+{
+  "harness_showcase.js": {
+    "passes": 114,
+    "fails": 10,
+    "names": [
+      "#cr-show joined the shared 572 desktop rule",
+      "CHANGELOG entry for 574",
+      "Sales Floor handler routes it",
+      "Sales Floor has the entry button",
+      "app stamp exists and is numeric",
+      "app stamp matches the newest CHANGELOG entry",
+      "desktop measure added",
+      "handler closes SF before opening (no stacked overlays)",
+      "navRestore has a showcase case",
+      "registered in hideAllViews array"
+    ],
+    "code": 1
+  },
+  "harness_walk.js": {
+    "passes": 22,
+    "fails": 11,
+    "names": [
+      "a box per finding",
+      "a row per finding",
+      "an unheard-of defect key still renders",
+      "boxes are positioned in PERCENT, not pixels",
+      "image is BARE base64, not a data: URL",
+      "mime is sent separately",
+      "session token is attached",
+      "severity drives the box class",
+      "the dropped count is surfaced, not swallowed",
+      "the route was called",
+      "vocabulary skew is warned about once"
+    ],
+    "code": 0
+  },
+  "harness_ourroofs.js": {
+    "passes": 58,
+    "fails": 0,
+    "names": [],
+    "code": 0
+  },
+  "harness_colors.js": {
+    "passes": 109,
+    "fails": 1,
+    "names": [
+      "#cr-occ still registered in OVERLAY_IDS and PANES"
+    ],
+    "code": 1
+  }
+}

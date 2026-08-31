@@ -159,3 +159,48 @@ jobs:
 
       - name: Sentinel sweep — 13 states x 4 viewports
         run: node .claude/skills/cardinal-build/scripts/gate_sentinel.mjs
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # The jsdom harnesses, ratcheted. Node 22 because jsdom 30 does not support
+  # node 20 at all — on 20 every one of these dies inside jsdom before its
+  # first assertion, which reads exactly like a suite that has no tests.
+  #
+  # ⚠ THESE FILES WERE IN THE REPO AND HAD NEVER RUN. jsdom was not installed
+  # here, so all six crashed on `Cannot find module 'jsdom'` — copied in with
+  # the tree, listed in the PR as coverage, and providing none. Same shape as
+  # the secret check that failed on its own definition. Two of them were
+  # removed rather than baselined (see gate_harnesses.mjs); the four that can
+  # honestly run here now do, on every push.
+  harnesses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install jsdom
+        run: |
+          mkdir -p .claude/skills/cardinal-build/scripts
+          cd .claude/skills/cardinal-build/scripts
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund jsdom@30
+      - name: The gate can go red
+        run: |
+          cp .claude/skills/cardinal-build/scripts/harness_baseline.json /tmp/hb.bak
+          node -e "
+            const f='.claude/skills/cardinal-build/scripts/harness_baseline.json';
+            const b=JSON.parse(require('fs').readFileSync(f,'utf8'));
+            // Claim one MORE pass than reality for every harness. A gate that
+            // cannot notice a suite shrinking is the failure mode that matters
+            // most here, so that is the direction the control tests.
+            for (const k of Object.keys(b)) b[k].passes += 1;
+            require('fs').writeFileSync(f, JSON.stringify(b, null, 2));
+          "
+          if node .claude/skills/cardinal-build/scripts/gate_harnesses.mjs; then
+            echo '::error::the harness gate PASSED a suite that lost assertions — it proves nothing'
+            cp /tmp/hb.bak .claude/skills/cardinal-build/scripts/harness_baseline.json
+            exit 1
+          fi
+          cp /tmp/hb.bak .claude/skills/cardinal-build/scripts/harness_baseline.json
+          echo 'control: the gate correctly refused a shrunken suite'
+      - name: Harnesses
+        run: node .claude/skills/cardinal-build/scripts/gate_harnesses.mjs
