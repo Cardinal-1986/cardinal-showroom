@@ -148,14 +148,17 @@ jobs:
       - name: The sentinel's own selftest
         run: node .claude/skills/cardinal-build/scripts/sentinel.js --selftest
 
-      # And the gate's selftest: against an empty baseline the same sweep must
-      # come back RED, or the comparison is comparing nothing.
+      # And the gate's own selftest: rig liveness, then the ratchet logic driven
+      # with FABRICATED findings.
+      #
+      # ⚠ ITS FIRST VERSION EMPTIED THE BASELINE AND DEMANDED THE SWEEP COME
+      # BACK RED — which quietly assumed the app was broken. It passed while
+      # four OC Colors defects were live and failed the moment they were fixed:
+      # a control that goes red when the thing it guards starts working. The
+      # logic half now needs no browser and no defects, so a clean app is
+      # allowed to be clean.
       - name: The gate can go red
-        run: |
-          cp .claude/skills/cardinal-build/scripts/sentinel_baseline.json /tmp/baseline.bak
-          echo '{}' > .claude/skills/cardinal-build/scripts/sentinel_baseline.json
-          node .claude/skills/cardinal-build/scripts/gate_sentinel.mjs --selftest
-          cp /tmp/baseline.bak .claude/skills/cardinal-build/scripts/sentinel_baseline.json
+        run: node .claude/skills/cardinal-build/scripts/gate_sentinel.mjs --selftest
 
       - name: Sentinel sweep — 13 states x 4 viewports
         run: node .claude/skills/cardinal-build/scripts/gate_sentinel.mjs

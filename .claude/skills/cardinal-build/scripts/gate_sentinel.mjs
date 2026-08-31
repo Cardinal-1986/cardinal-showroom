@@ -45,6 +45,24 @@ const UPDATE   = process.argv.includes('--update');
    viewport was added would make the baseline unmaintainable. */
 const keyOf = f => f.id + '|' + String(f.detail || '').slice(0, 200);
 
+/* The comparison, lifted out so the selftest can drive it with fabricated
+   findings instead of real ones. That separation is the whole point: the first
+   version of this control emptied the baseline and asserted the sweep came
+   back RED, which quietly assumed THE APP WAS BROKEN. It passed while four OC
+   Colors defects were live and went red the moment they were fixed — a control
+   that fails when the thing it guards starts working. Now the rig's liveness
+   and the gate's logic are checked separately, and neither depends on the app
+   carrying a defect. */
+export function classify(findings, base) {
+  const seen = new Map();
+  for (const f of findings) seen.set(keyOf(f), f);
+  return {
+    fresh:   [...seen.entries()].filter(([k, f]) => NEVER_BASELINE.has(f.id) || !(k in base)),
+    carried: [...seen.keys()].filter(k => k in base && !NEVER_BASELINE.has(seen.get(k).id)),
+    gone:    Object.keys(base).filter(k => !seen.has(k)),
+  };
+}
+
 function sweep(file, setup) {
   const r = spawnSync(process.execPath, [
     join(HERE, 'sentinel.js'), file,
@@ -67,15 +85,42 @@ function sweep(file, setup) {
    baseline: the four carried findings must then come back as failures. If
    this prints "0 new" the comparison is not comparing anything. */
 if (SELFTEST) {
-  const res = sweep('index.html', '.claude/skills/cardinal-build/scripts/sentinel_setup_showroom.js');
-  const keys = res.findings.map(keyOf);
   let bad = 0;
-  if (!res.ran) { console.log('  FAIL  the sweep rendered nothing'); bad++; }
-  else console.log('  PASS  the sweep rendered ' + res.ran + ' state(s)');
-  if (!keys.length) { console.log('  FAIL  an empty baseline produced 0 findings — nothing is being compared'); bad++; }
-  else console.log('  PASS  against an empty baseline the sweep is RED (' + keys.length + ' finding(s))');
-  const blocked = res.findings.filter(f => NEVER_BASELINE.has(f.id));
-  console.log('  PASS  ' + blocked.length + ' non-baselinable finding(s) present (RUN/RIG/PAGEERROR/CONSOLE)');
+  const t = (name, cond, detail) => {
+    console.log((cond ? '  PASS  ' : '  FAIL  ') + name + (detail ? '  — ' + detail : ''));
+    if (!cond) bad++;
+  };
+
+  /* 1. LIVENESS — the rig still drives the app. This is the only part that
+     touches a browser, and it asserts nothing about findings, because a clean
+     app must be allowed to be clean. */
+  const res = sweep('index.html', '.claude/skills/cardinal-build/scripts/sentinel_setup_showroom.js');
+  t('the sweep renders the app', res.ran >= 40, res.ran + ' render(s)');
+  t('every declared state ran', Array.isArray(res.findings) &&
+      !res.findings.some(f => f.id === 'RUN'),
+    (res.findings.filter(f => f.id === 'RUN').length || 0) + ' state(s) threw');
+
+  /* 2. LOGIC — fabricated findings, so this cannot be weakened by the app
+     getting healthier or noisier. */
+  const F = (id, detail) => ({ id, detail, at: ['selftest'] });
+  const base = { [keyOf(F('INK', 'known debt'))]: 'a reason' };
+
+  let c = classify([F('INK', 'known debt')], base);
+  t('a baselined finding is carried, not reported', c.fresh.length === 0 && c.carried.length === 1);
+
+  c = classify([F('INK', 'brand new')], base);
+  t('a finding absent from the baseline is REPORTED', c.fresh.length === 1);
+
+  c = classify([], base);
+  t('a baselined finding that stopped reproducing is flagged for trimming', c.gone.length === 1);
+
+  for (const id of NEVER_BASELINE) {
+    const b2 = { [keyOf(F(id, 'x'))]: 'someone tried to baseline this' };
+    const c2 = classify([F(id, 'x')], b2);
+    t(id + ' cannot be silenced by a baseline entry', c2.fresh.length === 1);
+  }
+
+  console.log(bad ? 'GATE SELFTEST RED' : 'GATE SELFTEST GREEN');
   process.exit(bad ? 1 : 0);
 }
 
