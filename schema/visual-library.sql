@@ -84,6 +84,11 @@ create trigger visual_library_history after insert or update on public.visual_li
 for each row execute function public.visual_library_keep_history();
 revoke all on function public.visual_library_keep_history() from public;
 revoke all on function public.visual_library_set_revision() from public;
+revoke all on function public.visual_library_keep_history() from anon, authenticated;
+revoke all on function public.visual_library_set_revision() from anon, authenticated;
+create index visual_library_documents_author_idx on public.visual_library_documents(author_id);
+create index visual_library_entries_author_idx on public.visual_library_entries(author_id);
+create index visual_library_imports_author_idx on public.visual_library_imports(imported_by);
 
 insert into storage.buckets(id,name,public,file_size_limit)
 values ('cardinal-visual-workspace','cardinal-visual-workspace',false,104857600);
