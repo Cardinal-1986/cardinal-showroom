@@ -45,6 +45,9 @@ jobs:
             for f in api/*.js; do node --check "$f"; done
           fi
 
+      - name: Private workspace access and revision controls
+        run: node --test tests/library-access.mjs
+
       # ⚠ THE CHECK THAT WOULD HAVE CAUGHT THE FIRST BROKEN DEPLOY. api/detect.js
       # was copied from Cardinal without its sibling `_staff.js`, so the function
       # crashed at MODULE LOAD — FUNCTION_INVOCATION_FAILED on every request,

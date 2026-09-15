@@ -158,15 +158,18 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
   padding:11px 16px;border-radius:10px;font:400 13.5px/1.35 -apple-system,sans-serif;
   max-width:88vw;box-shadow:0 8px 28px rgba(0,0,0,.5)}
 </style>
+<link rel="stylesheet" href="/showroom-home.css">
+<script src="/showroom-workspace.js" defer></script>
 </head>
 <body>
 
 <!-- ── sign in ───────────────────────────────────────────────────────────── -->
 <div id="srAuth">
+  <div class="sr-welcome"><p class="sr-eyebrow">Cardinal · The Showroom</p><h2>A better way<br>to see home.</h2><p>Materials, possibilities, and the details that make a house yours.</p></div>
   <form class="sr-card" id="srForm" autocomplete="on">
     <p class="sr-mark">Cardinal</p>
     <h1 class="sr-h1">Showroom</h1>
-    <p class="sr-sub">Staff sign-in. This is a separate application from the Cardinal CRM and keeps its own session.</p>
+    <p class="sr-sub">Sign in to prepare your next presentation and explore the Cardinal collection.</p>
     <label class="sr-field"><span>Email</span>
       <input id="srEmail" type="email" autocomplete="username" required></label>
     <label class="sr-field"><span>Password</span>
@@ -179,7 +182,7 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
 <!-- ── the app ───────────────────────────────────────────────────────────── -->
 <div id="srApp">
   <div class="sr-bar">
-    <span class="sr-name">Cardinal Showroom</span>
+    <span class="sr-name"><span class="sr-emblem" aria-hidden="true">C</span>Cardinal Showroom</span>
     <span class="sr-spacer"></span>
     <div class="sr-mode" role="group" aria-label="Mode">
       <button id="srPrep" type="button" aria-pressed="true">Prepare</button>
@@ -190,13 +193,28 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
   </div>
 
   <div class="sr-wrap">
+    <header class="sr-hero">
+      <div><p class="sr-eyebrow">The Cardinal collection</p><h1>A better way<br>to <em>see home.</em></h1><p class="sr-intro">Explore the materials. Picture the possibilities. Bring every detail of the next home into focus.</p></div>
+      <svg class="sr-hero-art" viewBox="0 0 480 280" fill="none" aria-hidden="true"><path d="M24 233H457M48 221V144L141 63L224 134M61 137V221M80 221V153H122V221M139 221V156H183V200H139M224 233V111L298 45L374 112V232M201 134L298 22L399 135M243 232V131H350V232M258 153H283V185H258ZM307 153H333V185H307ZM75 123L141 63L199 116M116 50V82M132 50V67M116 50H132M283 70H313V98H283Z" stroke="#b1b5b1" stroke-width="1.2"/><path d="M201 134L298 22L399 135" stroke="#de6b6e" stroke-width="2"/><path d="M34 254H447M48 247V261M374 247V261M298 5V17M415 44V229M408 44H422M408 229H422" stroke="#535b5d"/><circle cx="419" cy="185" r="26" stroke="#79857c"/><path d="M419 193V233M407 177L419 193L430 172" stroke="#79857c"/><path d="M189 233L174 276M228 233L245 276" stroke="#535b5d"/></svg>
+    </header>
+    <div class="sr-section-row"><h2>Explore the Showroom</h2><p>Ideas, materials &amp; a clearer picture.</p></div>
+    <div class="sr-grid" id="srLauncher"></div>
     <section class="sr-pack" id="srPack">
       <span class="sr-pill" id="srPackPill">No project</span>
       <h2 id="srPackName">Showroom</h2>
       <p id="srPackNote">Open with a project link to load its pack, or present the catalogue on its own.</p>
     </section>
 
-    <div class="sr-grid" id="srLauncher"></div>
+
+    <section id="srWorkspace" class="sr-prep-only" hidden>
+      <div class="sr-section-row"><h2>Your private workspace</h2><p>For you and your connected AI tools.</p></div>
+      <div class="sr-grid">
+        <a class="sr-tile" href="/workspace.html?open=library"><span class="sr-tag">Reference &amp; research</span><h3>Visual Library</h3><p>Assets, materials, equipment, decisions, and the shared work journal.</p></a>
+        <a class="sr-tile" href="/workspace.html?open=experience"><span class="sr-tag">Work in progress</span><h3>Cardinal Experience</h3><p>The neighborhood, map direction, review angles, and what comes next.</p></a>
+      </div>
+      <p><a class="sr-workspace-link" href="/workspace.html">Workspace journal &amp; file sync</a></p>
+    </section>
+    <footer class="sr-footer"><span>Cardinal Renovations</span><span>Every detail makes a difference.</span></footer>
 
     <h3 class="sr-head sr-prep-only" id="srPhotosHead" hidden>Project photos</h3>
     <div id="srPhotos" hidden></div>
@@ -553,6 +571,7 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
   /* ── session ─────────────────────────────────────────────────────────── */
   function enter(session) {
     window.currentUser = session.user;
+    if (window.CardinalWorkspace) window.CardinalWorkspace.enter(session);
     document.getElementById('srWho').textContent = session.user.email || '';
     AUTH.style.display = 'none';
     APP.classList.add('sr-on');
@@ -574,6 +593,7 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
 
   function leave() {
     window.currentUser = null;
+    if (window.CardinalWorkspace) window.CardinalWorkspace.leave();
     APP.classList.remove('sr-on');
     AUTH.style.display = '';
   }
@@ -605,7 +625,7 @@ body[data-mode="present"] .sr-prep-only{display:none !important}
   });
 
   window.CardinalShowroom = Object.assign(window.CardinalShowroom || {}, {
-    build: 'showroom-staging.1',
+    build: 'showroom-library.2026-09-15',
     projectIdFromHash: projectIdFromHash,
     loadProject: loadProject,
     setMode: setMode,
