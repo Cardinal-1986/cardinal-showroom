@@ -29,7 +29,21 @@
  });
  // Used by the migrated Library's existing document form. Upload directly to
  // private Storage so a PDF does not pass through a serverless body limit.
- window.CardinalLibraryUpload=async form=>{await session();const file=form.get('file');if(!(file instanceof File)||!file.size)throw new Error('Choose a file.');if(file.size>25*1024*1024)throw new Error('Choose a file smaller than 25 MB.');const key=crypto.randomUUID()+'/'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');const r=await client.storage.from(BUCKET).upload('uploaded/'+key,file,{contentType:file.type||'application/octet-stream',upsert:false});if(r.error)throw r.error;const document={key,name:file.name,category:String(form.get('category')||'other'),manufacturer:String(form.get('manufacturer')||''),collection:String(form.get('collection')||''),documentType:file.type||'Document',size:file.size,uploadedAt:new Date().toISOString()};const meta=await client.from('visual_library_documents').insert({key,document});if(meta.error)throw meta.error;return {document};};
+ window.CardinalLibraryUpload=async form=>{
+  await session();const file=form.get('file');if(!(file instanceof File)||!file.size)throw new Error('Choose a file.');
+  if(file.size>25*1024*1024)throw new Error('Choose a file smaller than 25 MB.');
+  if(!/\.(pdf|docx?|xlsx?|csv|txt|png|jpe?g|webp)$/i.test(file.name))throw new Error('Choose a PDF, office document, text file or reference image.');
+  const category=String(form.get('category')||'misc');
+  const rawManufacturer=String(form.get('manufacturer')||'').trim();
+  const manufacturerKey=rawManufacturer.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const manufacturer=({andersen:'Andersen',provia:'ProVia',wincore:'Wincore',plygem:'PlyGem'})[manufacturerKey]||rawManufacturer;
+  const collectionKey=category==='siding'?String(form.get('collection')||''):'';
+  const collection=({'mastic-siding':'Mastic Siding',accessories:'Accessories'})[collectionKey]||'';
+  const key=crypto.randomUUID()+'/'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const r=await client.storage.from(BUCKET).upload('uploaded/'+key,file,{contentType:file.type||'application/octet-stream',upsert:false});if(r.error)throw r.error;
+  const document={key,name:file.name,category,manufacturer,manufacturerKey,collection,collectionKey,documentType:String(form.get('documentType')||'Other'),size:file.size,uploadedAt:new Date().toISOString()};
+  const meta=await client.from('visual_library_documents').insert({key,document});if(meta.error)throw meta.error;return {document};
+ };
  async function start(){try{await ensure();status('wsStatus','Private to your owner account.');if($('wsContent'))$('wsContent').hidden=false;const dest=new URLSearchParams(location.search).get('open');if(dest==='library'||dest==='experience'){location.replace(dest==='library'?'/visual-library/library.html':'/cardinal-experience/index.html');return;}await notes();}catch(e){status('wsStatus',e.message,true);status('wsNoteStatus',e.message,true);}}
  client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT'){fetch('/api/visual-library?action=session',{method:'DELETE'}).finally(()=>location.assign('/'));}});
  setInterval(()=>{if(document.visibilityState==='visible')ensure().catch(e=>status('wsStatus',e.message,true));},240000);
