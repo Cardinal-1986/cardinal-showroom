@@ -6,6 +6,7 @@
 .sr-welcome p:last-child{color:#c7c3ba;max-width:350px}
 #srAuth .sr-card{background:#171a1d;border-radius:6px;border-color:#34393b;padding:36px;max-width:410px}
 #srAuth .sr-h1{font:400 34px/1.2 Georgia,serif;margin:0 0 12px}
+#srAuth .sr-mark{color:#ee6974}
 #srAuth .sr-sub{font-size:14px;line-height:1.65;color:#c7c3ba}
 #srAuth .sr-field{margin-bottom:20px}
 #srAuth .sr-field span{font-size:12px;color:#c7c3ba}
