@@ -539,7 +539,7 @@ const settle = () => new Promise(r => setTimeout(r, 30));
       /shrink\(file, DISP\.max, DISP\.q\)/.test(MODULE_JS));
     ok('a failed display copy is not fatal',
       /\}catch\(_\)\{ \/\* cards fall back to the full image \*\//.test(MODULE_JS));
-    ok('row stores the FULL path', /return path;\n\}/.test(MODULE_JS));
+    ok('row stores the FULL path', /return path;\r?\n\}/.test(MODULE_JS));
 
     // Derivation + fallback, exercised rather than asserted from source.
     const h = await boot({ admin: false, rows: PAIRS, workRows: [] });

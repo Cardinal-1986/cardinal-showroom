@@ -1,6 +1,22 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/detect.js": { "maxDuration": 60 }
-  }
+    "api/detect.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/visual-library/:asset*",
+      "destination": "/api/visual-library?area=library&asset=:asset*"
+    },
+    {
+      "source": "/cardinal-experience/:asset*",
+      "destination": "/api/visual-library?area=experience&asset=:asset*"
+    },
+    {
+      "source": "/api/documents/file",
+      "destination": "/api/visual-library?area=upload"
+    }
+  ]
 }

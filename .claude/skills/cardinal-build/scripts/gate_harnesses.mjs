@@ -38,10 +38,11 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
 const require_ = createRequire(import.meta.url);
 const P = require_('./script_paths.cjs');
 
-const HERE = path.dirname(new URL(import.meta.url).pathname);
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 const BASELINE = path.join(HERE, 'harness_baseline.json');
 
 /* Browser-free only. gate_983, gate_1076, harness_occhead and audit_contrast
