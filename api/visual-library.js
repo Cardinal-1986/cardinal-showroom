@@ -1,5 +1,12 @@
 import { SB,BUCKET,headers,authorize,fail,mutationAllowed,objectPath } from './_visual-library.js';
 
+// The Cardinal Experience snapshot this Showroom SERVES. Syncing a newer
+// snapshot into Storage does not switch anyone over — that is deliberate, so a
+// version can be uploaded and checked before anybody sees it. Bump this one
+// line to flip, once the new version is synced and verified.
+export const EXPERIENCE_VERSION='experience-v054';
+const AREA_PREFIX={library:'library-v60/',experience:`${EXPERIENCE_VERSION}/`,upload:'uploaded/'};
+
 const inlineTypes={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',mjs:'text/javascript; charset=utf-8',json:'application/json; charset=utf-8'};
 
 export default async function handler(req,res) {
@@ -20,7 +27,7 @@ export default async function handler(req,res) {
     const area=['experience','upload'].includes(req.query.area)?req.query.area:'library';
     const asset=String(req.query.asset || (area==='upload'?req.query.key:(area==='library'?'library.html':'index.html')) || '');
     const safe=objectPath(asset); if(!safe) return fail(res,400,'Invalid file path.');
-    const key=({library:'library-v60/',experience:'experience-v054/',upload:'uploaded/'})[area]+safe;
+    const key=AREA_PREFIX[area]+safe;
     const ext=asset.split('.').pop().toLowerCase();
     // Small application files keep their Showroom URL so relative imports resolve.
     // Large media goes straight from private Storage to the browser on demand.
