@@ -4,7 +4,7 @@ import { SB,BUCKET,headers,authorize,fail,mutationAllowed,objectPath } from './_
 // snapshot into Storage does not switch anyone over — that is deliberate, so a
 // version can be uploaded and checked before anybody sees it. Bump this one
 // line to flip, once the new version is synced and verified.
-export const EXPERIENCE_VERSION='experience-v059';
+export const EXPERIENCE_VERSION='experience-v060';
 const AREA_PREFIX={library:'library-v60/',experience:`${EXPERIENCE_VERSION}/`,upload:'uploaded/'};
 
 const inlineTypes={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',mjs:'text/javascript; charset=utf-8',json:'application/json; charset=utf-8'};
